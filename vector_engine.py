@@ -20,10 +20,13 @@ def tokenizer(documents=None):
     
     return clean_doc
 
-def uniqueWords(tokenized_text):
+def uniqueWords(tokenized_docs=None):
+    if tokenized_doc == None:
+        raise ValueError("Invalid data: Function parameters were empty")
+    
     combined_docs = []
     
-    for doc in tokenized_text:
+    for doc in tokenized_docs:
         combined_docs += doc
     
     combined_docs = set(combined_docs)
@@ -32,6 +35,31 @@ def uniqueWords(tokenized_text):
     
     return combined_docs
 
-output = tokenizer([["Hello, I'm having, hmm... quite a nice day today!"], ["I think I am Lebron James' son, back in 05 when he was ballin'! his life out."]])
+def build_vocab_index(vocab_list):
+    return {word: index for index, word in enumerate(vocab_list)}
 
-print(output)
+def vectorize(tokenized_docs, vocab_index):
+    if tokenized_docs is None or vocab_index is None:
+        raise ValueError("Invalid data: Function parameters were empty")
+
+    all_vectors = []
+    for doc in tokenized_docs:
+        vector = [0] * len(vocab_index)   # blank vector, one slot per vocab word
+
+        for word in doc:
+            if word in vocab_index:
+                index = vocab_index[word]
+                vector[index] += 1        # count-based use = 1 instead for binary
+
+        all_vectors.append(vector)
+
+    return all_vectors
+
+tokenized_doc = tokenizer([["the dog quickly, but slowly ran"], ["the cat, probably did sit."]])
+vocab_words = uniqueWords(tokenized_doc)
+vocab_index = build_vocab_index(vocab_words)
+vectors = vectorize(tokenized_doc, vocab_index)
+
+print(tokenized_doc)
+print(vocab_index)
+print(vectors)
