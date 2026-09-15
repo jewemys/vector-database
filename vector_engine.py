@@ -55,11 +55,43 @@ def vectorize(tokenized_docs, vocab_index):
 
     return all_vectors
 
+def search(query_text, all_vectors, vocab_index):
+    if query_text == None or all_vectors == None or vocab_index == None:
+        raise ValueError("Please provide a query text (User input) and make sure documents have been vectorized and slotted into this function alongisde the vocabulary index.")
+    
+    similarity_scores = {}
+    
+    query_tokenized = tokenizer([[query_text]])
+    query_vector = vectorize(query_tokenized, vocab_index)[0]
+
+    for index, vector in enumerate(all_vectors):
+        cs_score = cs(query_vector, vector)
+        similarity_scores[index] = cs_score
+        
+    return similarity_scores
+
+def threshold(similarity_scores, cutoff=0.5):
+    if similarity_scores == None:
+        raise ValueError("Please make sure threshold parameters is provided... with a dictionary too.")
+    
+    filtered_scores = {}
+    
+    for index in similarity_scores:
+        if similarity_scores[index] >= cutoff:
+            filtered_scores[index] = similarity_scores[index]
+            
+    return filtered_scores
+
+
 tokenized_doc = tokenizer([["the dog quickly, but slowly ran"], ["the cat, probably did sit."]])
 vocab_words = uniqueWords(tokenized_doc)
 vocab_index = build_vocab_index(vocab_words)
 vectors = vectorize(tokenized_doc, vocab_index)
+similarity_scores = search("the horse quickly ran across the field", vectors, vocab_index)
+filtered_scores = threshold(similarity_scores)
 
 print(tokenized_doc)
 print(vocab_index)
 print(vectors)
+print(similarity_scores)
+print(filtered_scores)
