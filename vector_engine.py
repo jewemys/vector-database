@@ -1,11 +1,26 @@
 from vectorMath import cosine_similarity as cs
 import string
+import pdfplumber
 
 class VectorDB: # Going to soon sort this into a class for reusability for different projects
     def __init__(self):
         pass
-    
-    
+
+def parser(list_of_pdfs):
+    documents = []
+    for doc in list_of_pdfs:
+        text_bucket = []
+        with pdfplumber.open(doc) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text is None:
+                    continue
+                text_bucket.append(text)
+        text_bucket = [" ".join(text_bucket)]
+        documents.append(text_bucket)
+    return documents
+
+
 def tokenizer(documents=None):
     if documents == None:
         raise ValueError("Invalid data: Function parameters were empty")
