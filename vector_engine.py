@@ -1,4 +1,5 @@
 from vectorMath import cosine_similarity as cs
+import string
 
 class VectorDB: # Going to soon sort this into a class for reusability for different projects
     def __init__(self):
@@ -11,7 +12,7 @@ def tokenizer(documents=None):
     
     clean_doc = []
     
-    punctuation_set = {"!", "?", ",", ".", "'"} # I am aware there are a lot of punctuation in UNICODE im just using a few for testing
+    punctuation_set = set(string.punctuation) | {"“", "”", "…"}
     
     for doc in documents:
         temp_doc = ["".join(char for char in word.lower() if char not in punctuation_set) for word in doc]
