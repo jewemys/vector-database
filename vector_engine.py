@@ -2,112 +2,104 @@ from vectorMath import cosine_similarity as cs
 import string
 import pdfplumber
 
-class VectorDB: # Going to soon sort this into a class for reusability for different projects
+from vectorMath import cosine_similarity as cs
+import string
+import pdfplumber
+
+
+class VectorDB:
     def __init__(self):
-        pass
+        self.vocab_index = {}
+        self.vectors = []
+        self.registry = {}  # index -> [filename, raw_text]
+        self.punctuation_set = set(string.punctuation) | {"“", "”", "…"}
 
-def parser(list_of_pdfs):
-    documents = []
-    for doc in list_of_pdfs:
-        text_bucket = []
-        with pdfplumber.open(doc) as pdf:
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text is None:
-                    continue
-                text_bucket.append(text)
-        text_bucket = [" ".join(text_bucket)]
-        documents.append(text_bucket)
-    return documents
+    def parser(self, list_of_pdfs):
+        documents = []
+        filenames = []
 
+        for doc in list_of_pdfs:
+            text_bucket = []
+            with pdfplumber.open(doc) as pdf:
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if text is None:
+                        continue
+                    text_bucket.append(text)
 
-def tokenizer(documents=None):
-    if documents == None:
-        raise ValueError("Invalid data: Function parameters were empty")
-    
-    clean_doc = []
-    
-    punctuation_set = set(string.punctuation) | {"“", "”", "…"}
-    
-    for doc in documents:
-        temp_doc = ["".join(char for char in word.lower() if char not in punctuation_set) for word in doc]
-        temp_doc = temp_doc[0].split()
-        clean_doc.append(temp_doc)
-    
-    return clean_doc
+            full_text = " ".join(text_bucket)
+            documents.append([full_text])
+            filenames.append(doc)
 
-def uniqueWords(tokenized_docs=None):
-    if tokenized_doc == None:
-        raise ValueError("Invalid data: Function parameters were empty")
-    
-    combined_docs = []
-    
-    for doc in tokenized_docs:
-        combined_docs += doc
-    
-    combined_docs = set(combined_docs)
-    combined_docs = list(combined_docs)
-    combined_docs.sort()
-    
-    return combined_docs
+        return documents, filenames
 
-def build_vocab_index(vocab_list):
-    return {word: index for index, word in enumerate(vocab_list)}
+    def tokenizer(self, documents=None):
+        if documents is None:
+            raise ValueError("Invalid data: Function parameters were empty")
 
-def vectorize(tokenized_docs, vocab_index):
-    if tokenized_docs is None or vocab_index is None:
-        raise ValueError("Invalid data: Function parameters were empty")
+        clean_docs = []
+        for doc in documents:
+            temp_doc = "".join(char for char in doc[0].lower() if char not in self.punctuation_set)
+            clean_docs.append(temp_doc.split())
 
-    all_vectors = []
-    for doc in tokenized_docs:
-        vector = [0] * len(vocab_index)   # blank vector, one slot per vocab word
+        return clean_docs
 
-        for word in doc:
-            if word in vocab_index:
-                index = vocab_index[word]
-                vector[index] += 1        # count-based use = 1 instead for binary
+    def uniqueWords(self, tokenized_docs=None):
+        if tokenized_docs is None:
+            raise ValueError("Invalid data: Function parameters were empty")
 
-        all_vectors.append(vector)
+        combined_docs = []
+        for doc in tokenized_docs:
+            combined_docs += doc
 
-    return all_vectors
+        return sorted(set(combined_docs))
 
-def search(query_text, all_vectors, vocab_index):
-    if query_text == None or all_vectors == None or vocab_index == None:
-        raise ValueError("Please provide a query text (User input) and make sure documents have been vectorized and slotted into this function alongisde the vocabulary index.")
-    
-    similarity_scores = {}
-    
-    query_tokenized = tokenizer([[query_text]])
-    query_vector = vectorize(query_tokenized, vocab_index)[0]
+    def build_vocab_index(self, vocab_list):
+        self.vocab_index = {word: index for index, word in enumerate(vocab_list)}
+        return self.vocab_index
 
-    for index, vector in enumerate(all_vectors):
-        cs_score = cs(query_vector, vector)
-        similarity_scores[index] = cs_score
-        
-    return similarity_scores
+    def vectorize(self, tokenized_docs):
+        if tokenized_docs is None:
+            raise ValueError("Invalid data: Function parameters were empty")
 
-def threshold(similarity_scores, cutoff=0.5):
-    if similarity_scores == None:
-        raise ValueError("Please make sure threshold parameters is provided... with a dictionary too.")
-    
-    filtered_scores = {}
-    
-    for index in similarity_scores:
-        if similarity_scores[index] >= cutoff:
-            filtered_scores[index] = similarity_scores[index]
-            
-    return filtered_scores
+        all_vectors = []
+        for doc in tokenized_docs:
+            vector = [0] * len(self.vocab_index)
+            for word in doc:
+                if word in self.vocab_index:
+                    vector[self.vocab_index[word]] += 1
+            all_vectors.append(vector)
 
+        return all_vectors
 
-tokenized_doc = tokenizer([["the dog quickly, but slowly ran"], ["the cat, probably did sit."]])
-vocab_words = uniqueWords(tokenized_doc)
-vocab_index = build_vocab_index(vocab_words)
-vectors = vectorize(tokenized_doc, vocab_index)
-similarity_scores = search("the horse quickly ran across the field", vectors, vocab_index)
-filtered_scores = threshold(similarity_scores)
+    def index_documents(self, list_of_pdfs):
+        # Full ingestion pipeline: parse, tokenize, build vocab, vectorize, and register.
+        documents, filenames = self.parser(list_of_pdfs)
+        tokenized = self.tokenizer(documents)
+        vocab_list = self.uniqueWords(tokenized)
 
-print(tokenized_doc)
-print(vocab_index)
-print(vectors)
-print(similarity_scores)
-print(filtered_scores)
+        self.build_vocab_index(vocab_list)
+        self.vectors = self.vectorize(tokenized)
+
+        self.registry = {
+            index: [filenames[index], documents[index][0]]
+            for index in range(len(filenames))
+        }
+
+    def search(self, query_text, cutoff=0.5):
+        if query_text is None:
+            raise ValueError("Please provide a query text.")
+
+        query_tokenized = self.tokenizer([[query_text]])
+        query_vector = self.vectorize(query_tokenized)[0]
+
+        results = {}
+        for index, vector in enumerate(self.vectors):
+            score = cs(query_vector, vector)
+            if score >= cutoff:
+                results[index] = {
+                    "filename": self.registry[index][0],
+                    "score": score
+                }
+
+        return results
