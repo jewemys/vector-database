@@ -1,8 +1,5 @@
 from vectorMath import cosine_similarity as cs
-import string
-import pdfplumber
-
-from vectorMath import cosine_similarity as cs
+from llm_client import generate_answer
 import string
 import pdfplumber
 
@@ -29,7 +26,7 @@ class VectorDB:
 
             full_text = " ".join(text_bucket)
             documents.append([full_text])
-            filenames.append(doc)
+            filenames.append(doc.split("/")[1])
 
         return documents, filenames
 
@@ -103,3 +100,32 @@ class VectorDB:
                 }
 
         return results
+    
+    
+db = VectorDB()
+
+pdf_paths = [
+    "PDFs/paper_dogs.pdf",
+    "PDFs/paper_cats.pdf",
+    "PDFs/paper_computers.pdf"
+]
+
+db.index_documents(pdf_paths)
+
+print("Vocab size:", len(db.vocab_index))
+print("Registry:", {k: v[0] for k, v in db.registry.items()})
+
+print("\n--- Query: 'the dog ran around and played' ---")
+results = db.search("the dog ran around and played", cutoff=0.05)
+for index, info in results.items():
+    print(index, info["filename"], round(info["score"], 3))
+
+print("\n--- Query: 'cats sit and groom themselves' ---")
+results = db.search("cats sit and groom themselves", cutoff=0.05)
+for index, info in results.items():
+    print(index, info["filename"], round(info["score"], 3))
+
+print("\n--- Query: 'python code and databases' ---")
+results = db.search("python code and databases", cutoff=0.05)
+for index, info in results.items():
+    print(index, info["filename"], round(info["score"], 3))
