@@ -1,7 +1,7 @@
 import math
 
 def dot_product(vector_a, vector_b):
-    if vector_a == None or vector_b == None:
+    if vector_a is None or vector_b is None:
         raise ValueError("Must insert in specifically 2 vectors of the same length in the function")
     
     if len(vector_a) != len(vector_b):
@@ -15,7 +15,7 @@ def dot_product(vector_a, vector_b):
     return total
 
 def magnitude(vector=None):
-    if vector == None:
+    if vector is None:
         return 0
     
     total = 0
@@ -26,7 +26,7 @@ def magnitude(vector=None):
     return math.sqrt(total)
 
 def cosine_similarity(vector_a, vector_b):
-    if vector_a == None or vector_b == None:
+    if vector_a is None or vector_b is None:
         raise ValueError("Must insert in 2 vectors")
     
     numerator = dot_product(vector_a, vector_b)
