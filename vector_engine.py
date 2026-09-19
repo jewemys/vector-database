@@ -111,53 +111,61 @@ class VectorDB:
                 }
 
         return results
+    
+    def answer_query(self, query_text, cutoff=0.4):
+        results = self.search(query_text, cutoff)
+        context_text = " ".join([self.registry[index][1] for index in results])
+        final_prompt = f"Here is some context:\n\"{context_text}\"\n\nUsing only the context above, answer this question: {query_text}"
+        return generate_answer(final_prompt)
 
-db_dense_mode = VectorDB(dense_mode=True)
-db = VectorDB(dense_mode=False)
 
-pdf_paths = [
-    "PDFs/paper_dogs.pdf",
-    "PDFs/paper_cats.pdf",
-    "PDFs/paper_computers.pdf"
-]
+if __name__ == "__main__":
+    db_dense_mode = VectorDB(dense_mode=True)
+    db = VectorDB(dense_mode=False)
+    
+    pdf_paths = [
+        "PDFs/paper_dogs.pdf",
+        "PDFs/paper_cats.pdf",
+        "PDFs/paper_computers.pdf"
+    ]
 
-db.index_documents(pdf_paths)
-db_dense_mode.index_documents(pdf_paths)
+    db.index_documents(pdf_paths)
+    db_dense_mode.index_documents(pdf_paths)
 
-print("Vocab size:", len(db.vocab_index))
-print("Registry:", {k: v[0] for k, v in db.registry.items()})
+    print("Vocab size:", len(db.vocab_index))
+    print("Registry:", {k: v[0] for k, v in db.registry.items()})
 
-print("\n--- Query: 'the dog ran around and played' ---")
-results = db.search("the dog ran around and played", cutoff=0.0)
-for index, info in results.items():
-    print(index, info["filename"], round(info["score"], 3))
+    print("\n--- Query: 'the dog ran around and played' ---")
+    results = db.search("the dog ran around and played", cutoff=0.5)
+    for index, info in results.items():
+        print(index, info["filename"], round(info["score"], 3))
 
-print("\n--- Query: 'cats sit and groom themselves' ---")
-results = db.search("cats sit and groom themselves", cutoff=0.0)
-for index, info in results.items():
-    print(index, info["filename"], round(info["score"], 3))
+    print("\n--- Query: 'cats sit and groom themselves' ---")
+    results = db.search("cats sit and groom themselves", cutoff=0.5)
+    for index, info in results.items():
+        print(index, info["filename"], round(info["score"], 3))
 
-print("\n--- Query: 'python code and databases' ---")
-results = db.search("python code and databases", cutoff=0.0)
-for index, info in results.items():
-    print(index, info["filename"], round(info["score"], 3))
+    print("\n--- Query: 'python code and databases' ---")
+    results = db.search("python code and databases", cutoff=0.5)
+    for index, info in results.items():
+        print(index, info["filename"], round(info["score"], 3))
 
-print("---------------------------------------------------------------------------------")
+    print("---------------------------------------------------------------------------------")
 
-print("Vocab size:", len(db_dense_mode.vocab_index))
-print("Registry:", {k: v[0] for k, v in db_dense_mode.registry.items()})
+    print("Vocab size:", len(db_dense_mode.vocab_index))
+    print("Registry:", {k: v[0] for k, v in db_dense_mode.registry.items()})
 
-print("\n--- Query: 'the dog ran around and played' ---")
-results = db_dense_mode.search("the dog ran around and played", cutoff=0.0)
-for index, info in results.items():
-    print(index, info["filename"], round(info["score"], 3))
+    print("\n--- Query: 'the dog ran around and played' ---")
+    results = db_dense_mode.search("the dog ran around and played", cutoff=0.5)
+    for index, info in results.items():
+        print(index, info["filename"], round(info["score"], 3))
 
-print("\n--- Query: 'cats sit and groom themselves' ---")
-results = db_dense_mode.search("cats sit and groom themselves", cutoff=0.0)
-for index, info in results.items():
-    print(index, info["filename"], round(info["score"], 3))
+    print("\n--- Query: 'cats sit and groom themselves' ---")
+    results = db_dense_mode.search("cats sit and groom themselves", cutoff=0.5)
+    for index, info in results.items():
+        print(index, info["filename"], round(info["score"], 3))
 
-print("\n--- Query: 'python code and databases' ---")
-results = db_dense_mode.search("python code and databases", cutoff=0.0)
-for index, info in results.items():
-    print(index, info["filename"], round(info["score"], 3))
+    print("\n--- Query: 'python code and databases' ---")
+    results = db_dense_mode.search("python code and databases", cutoff=0.5)
+    for index, info in results.items():
+        print(index, info["filename"], round(info["score"], 3))
